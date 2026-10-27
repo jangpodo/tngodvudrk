@@ -4,15 +4,15 @@ import streamlit as st
 
 # 페이지 기본 설정
 st.set_page_config(
-    page_title="다국어 소스코드 블록 하이라이트 & { } 연관선 분석기",
+    page_title="소스코드 형광 블록 & 3줄 스크롤 분석기",
     page_icon="🎨",
     layout="wide",
 )
 
-st.title("🎨 소스코드 블록 하이라이트 & { } 스코프 연결 분석 대시보드")
+st.title("🎨 형광색 칸 구분 및 3줄 스크롤 코드 블록 분석 대시보드")
 st.markdown(
-    "각 코드 뭉텅이(블록)의 **상세 동작 해석을 제목으로 자동 생성**하고, "
-    "**`{ }` (중괄호/대괄호) 영역에 묶인 코드 블록들을 얇은 연결선**으로 visual하게 이어 보여줍니다."
+    "각 코드 뭉텅이를 **화려한 형광색 테두리**로 직관적으로 구분하며, "
+    "코드 상자는 **기본 3줄 높이로 고정**되어 스크롤을 통해 전체 코드를 확인할 수 있습니다."
 )
 st.markdown("---")
 
@@ -25,7 +25,7 @@ selected_lang = st.radio(
     index=0,
 )
 
-# 기본 제공 예시 코드 (최소 4줄 이상 및 { } 구문 포함)
+# 기본 제공 예시 코드
 default_codes = {
     "C": """// C언어 점수 판별 및 카운트다운 예제
 #include <stdio.h>
@@ -90,7 +90,7 @@ public class Main {
         checkAge(20);
     }
 }""",
-    "Python": """# Python 데이터 처리 예제 (인덴트 블록 구조)
+    "Python": """# Python 데이터 처리 예제
 def process_scores(scores):
     total = 0
     
@@ -115,7 +115,7 @@ st.subheader("📝 분석할 소스코드 (최소 4줄 이상)")
 code_input = st.text_area(
     f"[{selected_lang}] 코드를 입력하거나 아래 예시를 수정하세요:",
     value=default_codes[selected_lang],
-    height=280,
+    height=260,
 )
 
 
@@ -172,23 +172,21 @@ def get_line_category(line, lang):
   return "GENERAL"
 
 
-# --- 상세 동작 해석 기반 제목 생성기 ---
+# --- 동적 제목 생성기 ---
 def generate_detailed_title(lines, category, lang):
   full_text = " ".join(lines)
 
   if category == "COMMENT":
     return "💡 코드 설명 및 주석 메타정보 구간"
-
   elif category == "HEADER":
     if "main" in full_text:
       return "🚀 메인(Main) 프로그램 진입점 및 실행 함수 정의"
     elif "class" in full_text:
       return "🏗️ 클래스(Class) 객체 데이터 구조 정의"
     elif "#include" in full_text or "import" in full_text:
-      return "📦 외부 라이브러리 및 헤더 파일 포함 선언"
+      return "📦 외부 라이브러리 선언 구간"
     else:
       return "🔧 핵심 기능 수행 전용 함수/메서드 선언"
-
   elif category == "LOGIC":
     has_loop = any(
         k in full_text
@@ -204,12 +202,10 @@ def generate_detailed_title(lines, category, lang):
     elif has_cond:
       return "⚡ 분기 조건(If/Else) 비교 판단 및 흐름 제어 로직"
     return "⚙️ 핵심 연산 및 로직 제어 구간"
-
   elif category == "OUTPUT":
     if "return" in full_text:
       return "🖥️ 처리된 데이터 계산 결과 화면 출력 및 반환"
     return "🖥️ 콘솔 화면 결과 데이터 출력 및 메시지 로깅"
-
   else:
     if "return" in full_text:
       return "📤 상위 함수로 최종 결과값 반환(Return)"
@@ -218,26 +214,21 @@ def generate_detailed_title(lines, category, lang):
     return "📦 일반 명령어 실행 및 연산 처리 구간"
 
 
-# --- 코드 뭉텅이 그룹화 및 `{ }` 스코프 깊이 측정 ---
+# --- 코드 뭉텅이 그룹화 및 중괄호 Depth 계측 ---
 def group_code_with_brace_scope(code_text, lang):
   lines = code_text.split("\n")
   blocks = []
   current_block_lines = []
   current_cat = None
   start_idx = 1
-
-  # 라인별 중괄호 Depth 측정
   current_depth = 0
   line_info = []
 
   for idx, line in enumerate(lines, 1):
     cat = get_line_category(line, lang)
-
-    # 단순 문자열 내부 제외한 { } 개수 카운트
     open_braces = line.count("{")
     close_braces = line.count("}")
 
-    # 현재 라인의 depth 정보 기록
     line_depth = current_depth
     current_depth += open_braces - close_braces
     if current_depth < 0:
@@ -248,11 +239,8 @@ def group_code_with_brace_scope(code_text, lang):
         "text": line,
         "category": cat,
         "depth": line_depth,
-        "open_braces": open_braces,
-        "close_braces": close_braces,
     })
 
-  # 뭉텅이(블록) 단위로 묶기
   for item in line_info:
     cat = item["category"]
 
@@ -263,7 +251,6 @@ def group_code_with_brace_scope(code_text, lang):
     elif cat == current_cat or cat == "BLANK":
       current_block_lines.append(item)
     else:
-      # 대표 Depth 계산 (블록 내 최소 depth)
       min_depth = min(x["depth"] for x in current_block_lines)
       raw_lines = [x["text"] for x in current_block_lines]
       detailed_title = generate_detailed_title(raw_lines, current_cat, lang)
@@ -297,42 +284,47 @@ def group_code_with_brace_scope(code_text, lang):
   return blocks
 
 
-# 블록 시각화 스타일
+# --- 형광 컬러 스타일 정의 (강렬한 형광색 테두리 및 뱃지 적용) ---
 STYLE_CONFIG = {
     "COMMENT": {
-        "bg": "#FFFBE6",
-        "border": "#FAAD14",
-        "color": "#8C6B00",
-        "line_color": "#ffe58f",
+        "bg": "#FAFDE8",
+        "border": "#CCFF00",  # 형광 연두/노랑
+        "color": "#556B00",
+        "badge_bg": "#CCFF00",
+        "badge_color": "#000000",
     },
     "HEADER": {
-        "bg": "#FFF0F0",
-        "border": "#FF4D4F",
-        "color": "#A8071A",
-        "line_color": "#ffccc7",
+        "bg": "#FFF0F6",
+        "border": "#FF007F",  # 형광 핑크/핫핑크
+        "color": "#99004D",
+        "badge_bg": "#FF007F",
+        "badge_color": "#FFFFFF",
     },
     "LOGIC": {
-        "bg": "#F9F0FF",
-        "border": "#9254DE",
-        "color": "#391085",
-        "line_color": "#d3ade6",
+        "bg": "#E6FFFF",
+        "border": "#00E5FF",  # 형광 시안/파랑
+        "color": "#005566",
+        "badge_bg": "#00E5FF",
+        "badge_color": "#000000",
     },
     "OUTPUT": {
-        "bg": "#F6FFED",
-        "border": "#52C41A",
-        "color": "#135200",
-        "line_color": "#b7eb8f",
+        "bg": "#E6FFFA",
+        "border": "#00FF66",  # 형광 네온 초록
+        "color": "#006624",
+        "badge_bg": "#00FF66",
+        "badge_color": "#000000",
     },
     "GENERAL": {
-        "bg": "#F0F5FF",
-        "border": "#2F54EB",
-        "color": "#10239E",
-        "line_color": "#adc6ff",
+        "bg": "#F9F0FF",
+        "border": "#BF00FF",  # 형광 바이올렛/보라
+        "color": "#590080",
+        "badge_bg": "#BF00FF",
+        "badge_color": "#FFFFFF",
     },
 }
 
 # 분석 실행
-if st.button("🚀 소스코드 블록 하이라이트 & { } 스코프 분석 실행", type="primary"):
+if st.button("🚀 형광 블록 & 3줄 스크롤 시각화 분석 실행", type="primary"):
   lines = code_input.split("\n")
 
   if len(lines) < 4:
@@ -341,15 +333,15 @@ if st.button("🚀 소스코드 블록 하이라이트 & { } 스코프 분석 �
     )
   else:
     st.success(
-        f"✨ [{selected_lang}] 코드를 동작 해석 제목과 {{ }} 연결선 포함하여 블록 분석을 완료했습니다!"
+        f"✨ [{selected_lang}] 형광색 칸 구분 및 3줄 스크롤 창 적용 분석 완료!"
     )
     st.markdown("---")
 
     blocks = group_code_with_brace_scope(code_input, selected_lang)
 
-    st.subheader("🎨 1. { } 스코프 연결선 및 동작 해석 블록 시각화")
+    st.subheader("🎨 1. 형광색 뭉텅이 구분 & 3줄 스크롤 코드 뷰어")
     st.caption(
-        "※ 상세 동작 해석이 블록 제목으로 지정되며, `{ }` (중괄호) 범위로 묶인 코드 블록은 좌측에 **얇은 스코프 연결선**이 생성됩니다."
+        "※ 코드 박스는 **기본 3줄 높이**로 설정되어 있으며, 코드가 길 경우 박스 안에서 스크롤하여 확인할 수 있습니다."
     )
 
     for block_num, block in enumerate(blocks, 1):
@@ -363,53 +355,58 @@ if st.button("🚀 소스코드 블록 하이라이트 & { } 스코프 분석 �
         if not safe_line:
           safe_line = "&nbsp;"
 
-        # 중괄호 하이라이팅 강조
+        # 중괄호 하이라이팅
         safe_line = safe_line.replace(
             "{",
-            '<b style="color:#d9d9d9; background:#262626; padding:0 3px; border-radius:3px;">{</b>',
+            '<b style="color:#FF007F; background:#FFE6F0; padding:0 3px;'
+            ' border-radius:3px;">{</b>',
         ).replace(
             "}",
-            '<b style="color:#d9d9d9; background:#262626; padding:0 3px; border-radius:3px;">}</b>',
+            '<b style="color:#FF007F; background:#FFE6F0; padding:0 3px;'
+            ' border-radius:3px;">}</b>',
         )
 
         block_code_html.append(
-            f'<div><span style="color: #bfbfbf; font-size: 11px;'
-            f' margin-right: 15px; user-select:'
-            f' none;">{l_item["line_num"]:2d}</span>{safe_line}</div>'
+            f'<div style="line-height: 22px; height: 22px;"><span style="color:'
+            f' #999999; font-size: 11px; margin-right: 15px; user-select:'
+            f' none; display: inline-block;'
+            f' width: 20px;">{l_item["line_num"]:2d}</span>{safe_line}</div>'
         )
 
       code_content = "".join(block_code_html)
 
-      # { } 연결선 (Depth 계층에 따른 좌측 연결선 패딩 및 가이드선 생성)
+      # { } 스코프 형광 연결선
       connector_lines_html = ""
+      neon_scope_colors = ["#FF007F", "#00E5FF", "#00FF66", "#BF00FF"]
       for d in range(depth):
-        line_color = ["#1890FF", "#722ED1", "#FA8C16", "#52C41A"][d % 4]
+        line_color = neon_scope_colors[d % len(neon_scope_colors)]
         connector_lines_html += f"""
                 <div style="
                     position: absolute;
                     left: {d * 14}px;
                     top: 0;
                     bottom: 0;
-                    width: 3px;
+                    width: 4px;
                     background-color: {line_color};
+                    box-shadow: 0 0 6px {line_color};
                     border-radius: 2px;
-                    opacity: 0.85;
-                " title="{{ }} 스코프 연결선 (Level {d+1})"></div>
+                " title="Scope Level {d+1}"></div>
                 """
 
       scope_badge = ""
       if depth > 0:
-        scope_badge = f'<span style="font-size: 11px; background-color: #595959; color: white; padding: 2px 6px; border-radius: 4px; margin-left: 8px;">🔗 {{ }} Scope Level {depth}</span>'
+        scope_badge = f'<span style="font-size: 11px; background-color: #333333; color: #00E5FF; padding: 2px 6px; border-radius: 4px; margin-left: 8px; font-weight: bold;">🔗 Level {depth} Scope</span>'
 
-      # HTML 카드 렌더링 (연결선 + 블록 테두리)
+      # HTML 카드 렌더링 (3줄 고정 max-height: 78px & overflow-y: auto)
       st.markdown(
           f"""
-            <div style="position: relative; padding-left: {depth * 14 + (10 if depth > 0 else 0)}px; margin-bottom: 16px;">
+            <div style="position: relative; padding-left: {depth * 14 + (10 if depth > 0 else 0)}px; margin-bottom: 20px;">
                 {connector_lines_html}
                 <div style="
                     background-color: {style['bg']};
-                    border: 2px solid {style['border']};
-                    border-radius: 8px;
+                    border: 3px solid {style['border']};
+                    box-shadow: 0 0 8px {style['border']}88;
+                    border-radius: 10px;
                     padding: 12px 14px;
                 ">
                     <div style="
@@ -422,17 +419,19 @@ if st.button("🚀 소스코드 블록 하이라이트 & { } 스코프 분석 �
                         align-items: center;
                     ">
                         <span>📌 [블록 #{block_num}] {block['title']} {scope_badge}</span>
-                        <span style="font-size: 12px; background-color: {style['border']}; color: white; padding: 2px 8px; border-radius: 4px;">Lines {block['start']} ~ {block['end']}</span>
+                        <span style="font-size: 12px; background-color: {style['badge_bg']}; color: {style['badge_color']}; padding: 3px 10px; border-radius: 12px; font-weight: bold;">Lines {block['start']} ~ {block['end']}</span>
                     </div>
+                    <!-- 3줄 크기로 제한된 스크롤 가능 코드 영역 -->
                     <div style="
                         background-color: #ffffff;
-                        border: 1px solid #e8e8e8;
-                        padding: 10px 12px;
+                        border: 1px solid #d9d9d9;
+                        padding: 6px 10px;
                         border-radius: 6px;
                         font-family: 'Consolas', 'Courier New', monospace;
                         font-size: 13px;
-                        line-height: 1.6;
-                        color: #262626;
+                        max-height: 78px;
+                        overflow-y: auto;
+                        box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
                     ">
                         {code_content}
                     </div>
@@ -454,8 +453,8 @@ if st.button("🚀 소스코드 블록 하이라이트 & { } 스코프 분석 �
           expanded=False,
       ):
         st.code(raw_block_text, language=selected_lang.lower())
-        st.write(f"• **상세 역할:** {block['title']}")
+        st.write(f"• **자동 생성 제목:** {block['title']}")
         st.write(
-            f"• **중괄호 {{ }} 스코프 깊이:** Level {block['depth']} (깊이가 높을수록"
-            " 내부 스코프에 중첩된 코드입니다)"
+            f"• **중괄호 {{ }} 깊이:** Level {block['depth']} (깊이가 클수록 안쪽"
+            " 스코프에 중첩된 코드 뭉텅이입니다)"
         )
