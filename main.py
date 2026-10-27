@@ -4,344 +4,391 @@ import streamlit as st
 
 # 페이지 기본 설정
 st.set_page_config(
-    page_title="다국어 소스코드 구간별 컬러 분석기",
+    page_title="다국어 소스코드 블록 하이라이트 & 분석기",
     page_icon="🎨",
     layout="wide",
 )
 
-st.title("🎨 다국어 소스코드 요약 및 구간별 컬러 시각화 대시보드")
+st.title("🎨 소스코드 블록(뭉텅이) 하이라이트 및 상세 분석 대시보드")
 st.markdown(
-    "파이썬, C, C++, Java 코드를 입력하면, **함수, 조건문, 반복문, 출력문, 주석** 등 코드의 역할과 구간별로 **배경색과 태그**를 입혀 보기 쉽게 분석해 드립니다."
+    "코드를 한 줄씩 칠하지 않고 **의미 있는 뭉텅이(블록) 단위**로 구별하여 색상을 입히고, 그 뒤에 각 블록의 작동 방식을 상세히 분석합니다."
 )
 st.markdown("---")
 
 # 1. 언어 선택 버튼
-st.subheader("🌐 1. 분석할 프로그래밍 언어 선택")
+st.subheader("🌐 🌐 언어 선택")
 selected_lang = st.radio(
-    "언어를 선택하세요:",
+    "분석할 프로그래밍 언어를 선택하세요:",
     ["Python", "C", "C++", "Java"],
     horizontal=True,
     index=0,
 )
 
-# 언어별 기본 예시 코드
+# 기본 제공 예시 코드 (최소 4줄 이상)
 default_codes = {
-    "Python": """# 파이썬 할인 및 반복문 예제
-def calculate_discount(price, is_vip):
-    # VIP 할인 계산
-    if is_vip:
-        discount = price * 0.2
-        print(f"VIP 할인 적용: {discount}원")
-    else:
-        discount = price * 0.05
-        print(f"일반 할인 적용: {discount}원")
+    "Python": """# 1. 점수 처리 함수 정의
+def process_scores(scores):
+    total = 0
     
-    for i in range(3):
-        print(f"안내 메시지 반복 {i+1}회")
-        
-    return price - discount
+    # 2. 반복 처리 및 조건 판별
+    for score in scores:
+        if score >= 80:
+            total += score
+            print(f"합격점 추가: {score}")
+        else:
+            print(f"불합격점 제외: {score}")
+            
+    return total
 
-# 메인 실행
-final_price = calculate_discount(12000, True)
-print(f"최종 금액: {final_price}")""",
-    "C": """// C언어 점수 판별 및 카운트다운 예제
+# 3. 메인 실행 및 결과 출력
+data = [75, 85, 90, 60]
+result = process_scores(data)
+print(f"최종 합산 점수: {result}")""",
+    "C": """// 1. 헤더 선언 및 함수 정의
 #include <stdio.h>
 
-void check_grade(int score) {
-    // 점수 조건 판별
-    if (score >= 90) {
-        printf("A학점입니다.\\n");
-    } else {
-        printf("B학점 이하입니다.\\n");
-    }
-    
-    for (int i = 0; i < 3; i++) {
-        printf("카운트다운: %d\\n", i);
+void analyze_numbers(int arr[], int size) {
+    // 2. 배열 조건 검색 및 반복문
+    for (int i = 0; i < size; i++) {
+        if (arr[i] % 2 == 0) {
+            printf("짝수 발견: %d\\n", arr[i]);
+        } else {
+            printf("홀수 발견: %d\\n", arr[i]);
+        }
     }
 }
 
+// 3. 메인 실행 함수
 int main() {
-    check_grade(95);
+    int data[] = {1, 2, 3, 4};
+    analyze_numbers(data, 4);
     return 0;
 }""",
-    "C++": """// C++ 데이터 처리 예제
+    "C++": """// 1. 헤더 선언 및 함수 정의
 #include <iostream>
+#include <vector>
 using namespace std;
 
-void process_data(int count) {
-    // 조건문 처리
-    if (count > 5) {
-        cout << "데이터가 충분합니다." << endl;
-    } else {
-        cout << "데이터가 부족합니다." << endl;
-    }
-
-    for (int i = 0; i < count; i++) {
-        cout << "프로세스 실행 중... #" << i + 1 << endl;
+void evaluate_grades(const vector<int>& grades) {
+    // 2. 벡터 데이터 반복 및 등급 출력
+    for (int score : grades) {
+        if (score >= 90) {
+            cout << "우수 등급: " << score << endl;
+        } else {
+            cout << "보통 등급: " << score << endl;
+        }
     }
 }
 
+// 3. 메인 함수 실행
 int main() {
-    process_data(3);
+    vector<int> student_scores = {95, 82, 88};
+    evaluate_grades(student_scores);
     return 0;
 }""",
-    "Java": """// Java 연령 확인 예제
-public class Main {
-    public static void checkAge(int age) {
-        // 연령 판별 조건문
-        if (age >= 18) {
-            System.out.println("성인입니다.");
+    "Java": """// 1. 클래스 정의 및 메서드 선언
+public class UserCheck {
+    public static void checkPermissions(int level) {
+        // 2. 권한 조건 분기 및 반복 구문
+        if (level >= 5) {
+            System.out.println("관리자 권한이 승인되었습니다.");
         } else {
-            System.out.println("미성년자입니다.");
+            System.out.println("일반 사용자 권한입니다.");
         }
-
-        for (int i = 0; i < 3; i++) {
-            System.out.println("대기 순번: " + (i + 1));
+        
+        for (int i = 1; i <= level; i++) {
+            System.out.println("권한 슬롯 검사 중: " + i);
         }
     }
 
+    // 3. 메인 진입점 메서드
     public static void main(String[] args) {
-        checkAge(20);
+        checkPermissions(6);
     }
 }""",
 }
 
-# 코드 입력란 (선택한 언어의 예시가 자동으로 로드됨)
 st.markdown("---")
-st.subheader("📝 2. 소스코드 입력")
+st.subheader("📝 📝 분석할 소스코드 (최소 4줄 이상)")
 code_input = st.text_area(
-    f"[{selected_lang}] 분석할 소스코드를 이곳에 작성하거나 붙여넣으세요:",
+    f"[{selected_lang}] 코드를 붙여넣거나 수정하세요:",
     value=default_codes[selected_lang],
-    height=280,
+    height=260,
 )
 
 
-# --- [언어별 라인 역할 분류 분석기] ---
-def classify_line(line, lang):
+# --- 라인별 분류 함수 ---
+def get_line_category(line, lang):
   stripped = line.strip()
   if not stripped:
-    return "BLANK", "공백"
+    return "BLANK"
 
-  # 1. 주석 (Comment)
-  if lang == "Python":
-    if stripped.startswith("#"):
-      return "COMMENT", "주석"
-  else:  # C, C++, Java
-    if (
-        stripped.startswith("//")
-        or stripped.startswith("/*")
-        or stripped.startswith("*")
-        or stripped.endswith("*/")
-    ):
-      return "COMMENT", "주석"
-
-  # 2. 출력문 (Output)
-  if lang == "Python" and "print(" in stripped:
-    return "OUTPUT", "출력문"
-  elif lang == "C" and ("printf(" in stripped or "puts(" in stripped):
-    return "OUTPUT", "출력문"
-  elif lang == "C++" and (
-      "cout" in stripped or "printf(" in stripped or "puts(" in stripped
+  # 주석
+  if (lang == "Python" and stripped.startswith("#")) or (
+      lang != "Python"
+      and (
+          stripped.startswith("//")
+          or stripped.startswith("/*")
+          or stripped.startswith("*")
+      )
   ):
-    return "OUTPUT", "출력문"
-  elif lang == "Java" and (
-      "System.out.print" in stripped or "System.out.println" in stripped
+    return "COMMENT"
+
+  # 함수 / 클래스 선언
+  if lang == "Python" and (
+      stripped.startswith("def ") or stripped.startswith("class ")
   ):
-    return "OUTPUT", "출력문"
+    return "HEADER"
+  if lang in ["C", "C++"] and (
+      re.search(
+          r"\b(void|int|float|double|char|bool|auto)\s+\w+\s*\(", stripped
+      )
+      or "main(" in stripped
+  ):
+    return "HEADER"
+  if lang == "Java" and (
+      "class " in stripped
+      or re.search(
+          r"\b(public|private|protected|static|void)\s+\w+\s*\(", stripped
+      )
+  ):
+    return "HEADER"
 
-  # 3. 함수/메서드 정의 (Function/Class)
-  if lang == "Python":
-    if stripped.startswith("def ") or stripped.startswith("class "):
-      return "FUNCTION", "함수/클래스"
-  elif lang in ["C", "C++"]:
-    if re.search(
-        r"\b(void|int|float|double|char|bool|auto|string)\s+\w+\s*\(", stripped
-    ) or ("main(" in stripped):
-      return "FUNCTION", "함수 정의"
-  elif lang == "Java":
-    if re.search(
-        r"\b(public|private|protected|static|void|class|int|double|String|boolean)\s+\w+\s*\(",
-        stripped,
-    ) or ("class " in stripped):
-      return "FUNCTION", "메서드/클래스"
+  # 조건 / 반복 제어구문
+  if re.search(r"\b(if|else|elif|for|while|switch|case|do)\b", stripped):
+    return "LOGIC"
 
-  # 4. 조건문 (Condition)
-  if re.search(r"\b(if|else if|elif|else)\b", stripped):
-    return "CONDITION", "조건문"
+  # 출력 구문
+  if (
+      ("print(" in stripped or "printf(" in stripped)
+      or ("cout" in stripped)
+      or ("System.out." in stripped)
+  ):
+    return "OUTPUT"
 
-  # 5. 반복문 (Loop)
-  if re.search(r"\b(for|while|do)\b", stripped):
-    return "LOOP", "반복문"
-
-  # 6. 기타 일반 실행문
-  return "GENERAL", "일반 코드"
+  return "GENERAL"
 
 
-# 실행 버튼
-if st.button("🚀 코드 구간별 요약 및 컬러 시각화 실행", type="primary"):
-  if not code_input.strip():
-    st.warning("⚠️ 코드가 입력되지 않았습니다. 분석할 코드를 입력해주세요!")
+# --- 뭉텅이(블록) 그룹화 함수 ---
+def group_code_into_blocks(code_text, lang):
+  lines = code_text.split("\n")
+  raw_blocks = []
+  current_block = []
+  current_cat = None
+  start_idx = 1
+
+  for idx, line in enumerate(lines, 1):
+    cat = get_line_category(line, lang)
+
+    if current_cat is None:
+      current_cat = cat
+      current_block.append((idx, line))
+      start_idx = idx
+    elif cat == current_cat or cat == "BLANK":
+      # 공백줄이나 같은 유형은 동일 뭉텅이로 흡수
+      current_block.append((idx, line))
+    else:
+      raw_blocks.append({
+          "category": current_cat,
+          "start": start_idx,
+          "end": idx - 1,
+          "lines": current_block,
+      })
+      current_cat = cat
+      current_block = [(idx, line)]
+      start_idx = idx
+
+  if current_block:
+    raw_blocks.append({
+        "category": current_cat,
+        "start": start_idx,
+        "end": len(lines),
+        "lines": current_block,
+    })
+
+  return raw_blocks
+
+
+# --- 블록 스타일 및 제목 정의 ---
+BLOCK_STYLES = {
+    "COMMENT": {
+        "title": "💡 주석 및 설명 뭉텅이",
+        "bg": "#FFFBE6",
+        "border": "#FAAD14",
+        "color": "#8C6B00",
+        "desc": "코드의 목적이나 설명을 기록한 주석 구간입니다.",
+    },
+    "HEADER": {
+        "title": "🔧 함수 및 구조 선언 뭉텅이",
+        "bg": "#FFF0F0",
+        "border": "#FF4D4F",
+        "color": "#A8071A",
+        "desc": "새로운 함수, 메서드, 클래스 등을 정의하여 진입점을 형성하는 구간입니다.",
+    },
+    "LOGIC": {
+        "title": "⚡ 조건 분기 및 반복 로직 뭉텅이",
+        "bg": "#F9F0FF",
+        "border": "#9254DE",
+        "color": "#391085",
+        "desc": (
+            "조건(if/else) 판단이나 반복(for/while) 처리가 진행되는 제어 흐름"
+            " 핵심 구간입니다."
+        ),
+    },
+    "OUTPUT": {
+        "title": "🖥️ 데이터 출력 및 반환 뭉텅이",
+        "bg": "#F6FFED",
+        "border": "#52C41A",
+        "color": "#135200",
+        "desc": "결과 데이터를 화면에 출력하거나 상위 호출부로 전달하는 구간입니다.",
+    },
+    "GENERAL": {
+        "title": "📦 일반 연산 및 실행 뭉텅이",
+        "bg": "#F0F5FF",
+        "border": "#2F54EB",
+        "color": "#10239E",
+        "desc": "변수 할당, 연산 수행, 함수 호출 등이 이루어지는 일반 실행 코드 구간입니다.",
+    },
+}
+
+
+# 분석 실행
+if st.button("🚀 코드 뭉텅이 하이라이트 & 블록 분석 실행", type="primary"):
+  lines = code_input.split("\n")
+
+  # 4줄 미만 검증
+  if len(lines) < 4:
+    st.warning(
+        f"⚠️ 코드가 너무 짧습니다! 현재 {len(lines)}줄입니다. 최소 4줄 이상의 코드를 입력해주세요."
+    )
   else:
-    st.success(f"✨ [{selected_lang}] 분석 완료!")
+    st.success(
+        f"✨ [{selected_lang}] 총 {len(lines)}줄의 코드를 뭉텅이(블록) 단위로 하이라이팅 및 분석을 완료했습니다!"
+    )
     st.markdown("---")
 
-    lines = code_input.split("\n")
+    blocks = group_code_into_blocks(code_input, selected_lang)
 
-    # 통계 집계
-    role_counts = {
-        "FUNCTION": 0,
-        "CONDITION": 0,
-        "LOOP": 0,
-        "OUTPUT": 0,
-        "COMMENT": 0,
-        "GENERAL": 0,
-        "BLANK": 0,
-    }
-
-    classified_lines = []
-    for idx, line in enumerate(lines, 1):
-      role_key, role_label = classify_line(line, selected_lang)
-      role_counts[role_key] += 1
-      classified_lines.append((idx, line, role_key, role_label))
-
-    # 1. 요약 리포트
-    st.subheader("📌 1. 코드 구조 및 역할 요약 리포트")
-    c1, c2, c3, c4, c5 = st.columns(5)
-    c1.metric("전체 줄 수", f"{len(lines)}줄")
-    c2.metric("함수/메서드 구문", f"{role_counts['FUNCTION']}줄")
-    c3.metric("조건문 구문", f"{role_counts['CONDITION']}줄")
-    c4.metric("반복문 구문", f"{role_counts['LOOP']}줄")
-    c5.metric("출력 구문", f"{role_counts['OUTPUT']}줄")
-
-    st.info(
-        f"**[{selected_lang} 분석 결과]** 총 **{len(lines)}줄** 중 실제 실행 코드는 **{len(lines) - role_counts['BLANK']}줄**입니다.\n"
-        f"• 주석 **{role_counts['COMMENT']}줄**, 조건 분기 **{role_counts['CONDITION']}회**, "
-        f"반복 처리 **{role_counts['LOOP']}회**, 화면 출력 구문이 **{role_counts['OUTPUT']}회** 탐지되었습니다."
+    # 1. 뭉텅이(블록) 하이라이트 시각화
+    st.subheader("🎨 1. 코드 뭉텅이(블록) 하이라이트 뷰어")
+    st.caption(
+        "※ 한 줄씩 칠하지 않고, 역할이 같은 연속된 코드를 **하나의 통 뭉텅이(블록)**로 묶어서 하이라이팅했습니다."
     )
+
+    for block_num, block in enumerate(blocks, 1):
+      style = BLOCK_STYLES.get(block["category"], BLOCK_STYLES["GENERAL"])
+
+      # 블록 내부 코드 HTML 변환
+      block_code_html = []
+      for l_num, line_str in block["lines"]:
+        safe_line = html.escape(line_str).replace(" ", "&nbsp;")
+        if not safe_line:
+          safe_line = "&nbsp;"
+        block_code_html.append(
+            f'<div><span style="color: #bfbfbf; font-size: 11px;'
+            f' margin-right: 15px; user-select:'
+            f' none;">{l_num:2d}</span>{safe_line}</div>'
+        )
+
+      code_content = "".join(block_code_html)
+
+      # 블록 뭉텅이 카드 렌더링
+      st.markdown(
+          f"""
+            <div style="
+                background-color: {style['bg']};
+                border: 2px solid {style['border']};
+                border-radius: 8px;
+                margin-bottom: 18px;
+                padding: 14px;
+            ">
+                <div style="
+                    font-weight: bold;
+                    color: {style['color']};
+                    font-size: 15px;
+                    margin-bottom: 8px;
+                    display: flex;
+                    justify-content: space-between;
+                ">
+                    <span>{style['title']} (블록 #{block_num})</span>
+                    <span style="font-size: 13px; background-color: {style['border']}; color: white; padding: 2px 8px; border-radius: 4px;">Lines {block['start']} ~ {block['end']}</span>
+                </div>
+                <div style="
+                    background-color: #ffffff;
+                    border: 1px solid #e8e8e8;
+                    padding: 12px;
+                    border-radius: 6px;
+                    font-family: 'Consolas', 'Courier New', monospace;
+                    font-size: 13px;
+                    line-height: 1.6;
+                    color: #262626;
+                ">
+                    {code_content}
+                </div>
+            </div>
+            """,
+          unsafe_allow_html=True,
+      )
 
     st.markdown("---")
 
-    # 2. 구간별 역할 컬러 시각화
-    st.subheader("🎨 2. 구간 및 역할별 컬러 시각화 뷰어")
+    # 2. 블록 단위 상세 코드 분석
+    st.subheader("🔍 2. 코드 뭉텅이(블록)별 상세 해석 및 분석")
     st.markdown(
-        "각 코드 라인의 **역할(함수, 조건문, 반복문, 출력문, 주석 등)**에 따라 **구간 배경색**과 라벨을 다르게 입혔습니다."
+        "각 코드 뭉텅이가 **어떤 역할을 수행하는지 상세 분석한 결과**입니다."
     )
 
-    # 구간별 스타일 정의 (배경색, 테두리, 라벨 색상)
-    styles = {
-        "FUNCTION": {
-            "bg": "#FFF0F0",
-            "border": "#FF4D4F",
-            "tag_bg": "#FF4D4F",
-            "tag_color": "#FFFFFF",
-            "code_color": "#A8071A",
-        },
-        "CONDITION": {
-            "bg": "#F9F0FF",
-            "border": "#9254DE",
-            "tag_bg": "#9254DE",
-            "tag_color": "#FFFFFF",
-            "code_color": "#391085",
-        },
-        "LOOP": {
-            "bg": "#E6F7FF",
-            "border": "#1890FF",
-            "tag_bg": "#1890FF",
-            "tag_color": "#FFFFFF",
-            "code_color": "#003A8C",
-        },
-        "OUTPUT": {
-            "bg": "#F6FFED",
-            "border": "#52C41A",
-            "tag_bg": "#52C41A",
-            "tag_color": "#FFFFFF",
-            "code_color": "#135200",
-        },
-        "COMMENT": {
-            "bg": "#FFFBE6",
-            "border": "#FAAD14",
-            "tag_bg": "#FAAD14",
-            "tag_color": "#000000",
-            "code_color": "#8C6B00",
-        },
-        "GENERAL": {
-            "bg": "#FAFAFA",
-            "border": "#D9D9D9",
-            "tag_bg": "#8C8C8C",
-            "tag_color": "#FFFFFF",
-            "code_color": "#262626",
-        },
-        "BLANK": {
-            "bg": "#FFFFFF",
-            "border": "#F0F0F0",
-            "tag_bg": "#BFBFBF",
-            "tag_color": "#FFFFFF",
-            "code_color": "#8C8C8C",
-        },
-    }
+    for block_num, block in enumerate(blocks, 1):
+      style = BLOCK_STYLES.get(block["category"], BLOCK_STYLES["GENERAL"])
 
-    # 범례 안내
-    st.markdown(
-        """
-        <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px; font-size: 13px;">
-            <span style="background:#FFF0F0; border:1px solid #FF4D4F; padding:4px 8px; border-radius:4px; color:#A8071A; font-weight:bold;">■ 함수/클래스 정의</span>
-            <span style="background:#F9F0FF; border:1px solid #9254DE; padding:4px 8px; border-radius:4px; color:#391085; font-weight:bold;">■ 조건문(if/else)</span>
-            <span style="background:#E6F7FF; border:1px solid #1890FF; padding:4px 8px; border-radius:4px; color:#003A8C; font-weight:bold;">■ 반복문(for/while)</span>
-            <span style="background:#F6FFED; border:1px solid #52C41A; padding:4px 8px; border-radius:4px; color:#135200; font-weight:bold;">■ 출력문(print/printf/cout)</span>
-            <span style="background:#FFFBE6; border:1px solid #FAAD14; padding:4px 8px; border-radius:4px; color:#8C6B00; font-weight:bold;">■ 주석(//, #)</span>
-            <span style="background:#FAFAFA; border:1px solid #D9D9D9; padding:4px 8px; border-radius:4px; color:#262626;">■ 일반 코드</span>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+      # 블록 코드 텍스트
+      raw_block_text = "\n".join([line for _, line in block["lines"]])
 
-    # HTML 화면 렌더링 생성
-    html_lines = []
-    for line_num, line_content, role_key, role_label in classified_lines:
-      style = styles[role_key]
+      with st.expander(
+          f"📌 [블록 #{block_num}] Lines {block['start']}~{block['end']} :"
+          f" {style['title']}",
+          expanded=True,
+      ):
+        c1, c2 = st.columns([1, 2])
 
-      # 문법 인코딩 및 공백 유지
-      safe_content = html.escape(line_content).replace(" ", "&nbsp;")
-      if not safe_content:
-        safe_content = "&nbsp;"
+        with c1:
+          st.markdown("**코드 뭉텅이 원문:**")
+          st.code(raw_block_text, language=selected_lang.lower())
 
-      line_html = f"""
-        <div style="
-            display: flex;
-            align-items: center;
-            background-color: {style['bg']};
-            border-left: 5px solid {style['border']};
-            margin-bottom: 4px;
-            padding: 5px 10px;
-            border-radius: 4px;
-            font-family: 'Consolas', 'Courier New', monospace;
-            font-size: 14px;
-            line-height: 1.5;
-        ">
-            <span style="min-width: 35px; color: #8c8c8c; font-size: 12px; user-select: none;">{line_num:2d}</span>
-            <span style="
-                background-color: {style['tag_bg']};
-                color: {style['tag_color']};
-                font-size: 11px;
-                padding: 1px 6px;
-                border-radius: 3px;
-                margin-right: 12px;
-                min-width: 70px;
-                text-align: center;
-                font-weight: bold;
-                display: inline-block;
-            ">{role_label}</span>
-            <span style="color: {style['code_color']}; font-weight: {'bold' if role_key in ['FUNCTION', 'CONDITION', 'LOOP', 'OUTPUT'] else 'normal'}; font-family: monospace;">{safe_content}</span>
-        </div>
-        """
-      html_lines.append(line_html)
+        with c2:
+          st.markdown("**🔍 상세 동작 해석:**")
+          st.info(f"**구간 역할:** {style['desc']}")
 
-    # 구간별 컬러 뷰어 출력
-    st.markdown(
-        f"""
-        <div style="background-color: #262626; padding: 12px; border-radius: 8px; border: 1px solid #434343;">
-            {''.join(html_lines)}
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+          # 세부 분석 메시지 추출
+          analysis_points = []
+          for _, l in block["lines"]:
+            stripped = l.strip()
+            if "if" in stripped or "else" in stripped or "elif" in stripped:
+              analysis_points.append(
+                  "• 조건 판단문: 특정 조건의 만족 여부에 따라 실행 경로를 다르게 바꿉니다."
+              )
+            elif "for" in stripped or "while" in stripped:
+              analysis_points.append(
+                  "• 반복 제어문: 지정된 횟수나 조건 동안 내부 로직을 반복 수행합니다."
+              )
+            elif "def " in stripped or "main(" in stripped:
+              analysis_points.append(
+                  "• 진입점/함수 선언: 해당 코드 뭉텅이의 기능을 캡슐화하는 함수 시작 부분입니다."
+              )
+            elif (
+                ("print" in stripped)
+                or ("cout" in stripped)
+                or ("System.out" in stripped)
+            ):
+              analysis_points.append(
+                  "• 화면 출력: 처리된 데이터 결과를 콘솔 모니터에 출력합니다."
+              )
+
+          if not analysis_points:
+            analysis_points.append(
+                "• 일반 실행구문: 변수 선언, 값 저장 또는 외부 함수 호출을 수행하는 기본 실행 단계입니다."
+            )
+
+          # 중복 제거 후 출력
+          for point in list(dict.fromkeys(analysis_points)):
+            st.markdown(point)
